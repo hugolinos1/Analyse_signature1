@@ -1,4 +1,3 @@
-
 import { pipeline } from '@huggingface/transformers';
 import { AnalysisResult, Detection, ContractClassification, CLASSIFICATION_CASES } from '@/types/analysis';
 import { PDFToImageService, PDFPage } from './pdfToImageService';
@@ -30,38 +29,48 @@ export class RealAIAnalysisService {
   static async analyzePDF(file: File): Promise<AnalysisResult> {
     console.log('Début de l\'analyse IA réelle...');
     
-    // Initialiser le modèle si nécessaire
-    await this.initializeModel();
-    
-    // Convertir le PDF en images
-    const pages = await PDFToImageService.convertPDFToImages(file);
-    console.log(`PDF converti en ${pages.length} pages`);
-    
-    // Analyser chaque page
-    const allDetections: Detection[] = [];
-    
-    for (const page of pages) {
-      const pageDetections = await this.analyzePage(page);
-      allDetections.push(...pageDetections);
+    try {
+      // Initialiser le modèle si nécessaire
+      await this.initializeModel();
+      
+      // Convertir le PDF en images
+      console.log('Conversion du PDF en images...');
+      const pages = await PDFToImageService.convertPDFToImages(file);
+      console.log(`PDF converti en ${pages.length} pages avec succès`);
+      
+      // Analyser chaque page
+      const allDetections: Detection[] = [];
+      
+      for (const page of pages) {
+        console.log(`Analyse de la page ${page.pageNumber}...`);
+        const pageDetections = await this.analyzePage(page);
+        allDetections.push(...pageDetections);
+        console.log(`Page ${page.pageNumber}: ${pageDetections.length} détections`);
+      }
+
+      // Classifier le contrat
+      const classification = this.classifyContract(allDetections);
+      
+      // Calculer la confiance globale
+      const confidence = allDetections.length > 0 
+        ? allDetections.reduce((sum, d) => sum + d.confidence, 0) / allDetections.length
+        : 0.95; // Haute confiance si aucune détection
+
+      console.log(`Analyse terminée: ${allDetections.length} détections au total`);
+
+      return {
+        id: `analysis_${Date.now()}`,
+        fileName: file.name,
+        timestamp: new Date(),
+        status: 'completed',
+        classification,
+        detections: allDetections,
+        confidence
+      };
+    } catch (error) {
+      console.error('Erreur détaillée lors de l\'analyse IA:', error);
+      throw error; // Re-lancer l'erreur pour qu'elle soit gérée par le service parent
     }
-
-    // Classifier le contrat
-    const classification = this.classifyContract(allDetections);
-    
-    // Calculer la confiance globale
-    const confidence = allDetections.length > 0 
-      ? allDetections.reduce((sum, d) => sum + d.confidence, 0) / allDetections.length
-      : 0.95; // Haute confiance si aucune détection
-
-    return {
-      id: `analysis_${Date.now()}`,
-      fileName: file.name,
-      timestamp: new Date(),
-      status: 'completed',
-      classification,
-      detections: allDetections,
-      confidence
-    };
   }
 
   private static async analyzePage(page: PDFPage): Promise<Detection[]> {
