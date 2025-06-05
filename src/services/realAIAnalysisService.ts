@@ -1,10 +1,10 @@
 
-import { pipeline, ObjectDetectionPipeline } from '@huggingface/transformers';
+import { pipeline } from '@huggingface/transformers';
 import { AnalysisResult, Detection, ContractClassification, CLASSIFICATION_CASES } from '@/types/analysis';
 import { PDFToImageService, PDFPage } from './pdfToImageService';
 
 export class RealAIAnalysisService {
-  private static detector: ObjectDetectionPipeline | null = null;
+  private static detector: any = null;
 
   static async initializeModel(): Promise<void> {
     if (!this.detector) {
@@ -79,22 +79,27 @@ export class RealAIAnalysisService {
       // Convertir les résultats en détections
       const detections: Detection[] = [];
       
-      for (const result of results) {
-        // Mapper les classes détectées vers nos types
-        const detectionType = this.mapLabelToDetectionType(result.label);
-        if (detectionType) {
-          detections.push({
-            type: detectionType,
-            page: page.pageNumber,
-            coordinates: {
-              x: Math.round(result.box.xmin),
-              y: Math.round(result.box.ymin),
-              width: Math.round(result.box.xmax - result.box.xmin),
-              height: Math.round(result.box.ymax - result.box.ymin)
-            },
-            confidence: result.score,
-            description: `${result.label} détecté avec ${Math.round(result.score * 100)}% de confiance`
-          });
+      // Gérer le cas où results est un tableau
+      const resultArray = Array.isArray(results) ? results : [results];
+      
+      for (const result of resultArray) {
+        // Vérifier que l'objet a les bonnes propriétés
+        if (result && typeof result === 'object' && 'label' in result && 'box' in result && 'score' in result) {
+          const detectionType = this.mapLabelToDetectionType(result.label);
+          if (detectionType) {
+            detections.push({
+              type: detectionType,
+              page: page.pageNumber,
+              coordinates: {
+                x: Math.round(result.box.xmin || 0),
+                y: Math.round(result.box.ymin || 0),
+                width: Math.round((result.box.xmax || 0) - (result.box.xmin || 0)),
+                height: Math.round((result.box.ymax || 0) - (result.box.ymin || 0))
+              },
+              confidence: result.score || 0,
+              description: `${result.label} détecté avec ${Math.round((result.score || 0) * 100)}% de confiance`
+            });
+          }
         }
       }
 
