@@ -8,11 +8,12 @@ export class RealAIAnalysisService {
 
   static async initializeModel(): Promise<void> {
     if (!this.detector) {
-      console.log('Chargement du modèle YOLO de détection de signatures...');
+      console.log('Chargement du modèle de détection d\'objets...');
       try {
+        // Utiliser un modèle de détection d'objets compatible
         this.detector = await pipeline(
           'object-detection',
-          'Xenova/detr-resnet-50', // Modèle de détection d'objets générique
+          'Xenova/detr-resnet-50',
           { device: 'webgpu' }
         );
         console.log('Modèle chargé avec succès');
@@ -107,17 +108,16 @@ export class RealAIAnalysisService {
   private static mapLabelToDetectionType(label: string): Detection['type'] | null {
     const lowerLabel = label.toLowerCase();
     
-    if (lowerLabel.includes('signature') || lowerLabel.includes('sign')) {
-      return 'handwritten_signature';
-    }
-    if (lowerLabel.includes('text') || lowerLabel.includes('writing')) {
-      return 'annotation';
-    }
+    // Mapper les objets détectés vers nos types de détection
     if (lowerLabel.includes('person') || lowerLabel.includes('hand')) {
       return 'handwritten_signature';
     }
+    if (lowerLabel.includes('book') || lowerLabel.includes('paper')) {
+      return 'annotation';
+    }
     
-    // Retourner null pour les objets non pertinents
+    // Pour cette démo, nous retournons null pour la plupart des objets
+    // Dans un vrai système, on utiliserait un modèle spécialisé dans les signatures
     return null;
   }
 
