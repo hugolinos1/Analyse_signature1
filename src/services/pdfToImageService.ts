@@ -1,13 +1,21 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
+import { DiagnosticService } from './diagnosticService';
 
-// Configuration simplifiée du worker PDF.js
+// Configuration du worker PDF.js avec diagnostic
 if (typeof window !== 'undefined') {
-  // Utiliser la version bundlée qui inclut le worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.js',
-    import.meta.url
-  ).toString();
+  try {
+    DiagnosticService.log('🔧 Configuration du worker PDF.js...');
+    
+    // Approche 1: Essayer l'URL standard
+    const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).toString();
+    DiagnosticService.log('📍 Tentative URL worker:', workerUrl);
+    
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+    DiagnosticService.log('✅ Worker configuré avec succès');
+  } catch (error) {
+    DiagnosticService.log('❌ Erreur configuration worker:', error);
+  }
 }
 
 export interface PDFPage {
@@ -19,13 +27,16 @@ export interface PDFPage {
 
 export class PDFToImageService {
   static async convertPDFToImages(file: File): Promise<PDFPage[]> {
-    console.log('🔄 Début de la conversion PDF vers images...');
+    DiagnosticService.log('🔄 Début de la conversion PDF vers images...');
     
     try {
       const arrayBuffer = await file.arrayBuffer();
-      console.log('📄 Fichier PDF lu avec succès, taille:', arrayBuffer.byteLength, 'bytes');
+      DiagnosticService.log('📄 Fichier PDF lu avec succès, taille:', arrayBuffer.byteLength);
       
-      // Configuration optimisée pour le navigateur
+      // Test de la configuration du worker
+      DiagnosticService.log('🔧 Worker source actuel:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+      
+      // Configuration de chargement avec diagnostic
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         useWorkerFetch: false,
@@ -35,15 +46,19 @@ export class PDFToImageService {
         disableStream: true
       });
       
-      console.log('🚀 Chargement du document PDF...');
+      DiagnosticService.log('🚀 Tentative de chargement du document PDF...');
       const pdf = await loadingTask.promise;
-      console.log('✅ PDF chargé avec succès, nombre de pages:', pdf.numPages);
+      DiagnosticService.log('✅ PDF chargé avec succès, nombre de pages:', pdf.numPages);
       
       const pages: PDFPage[] = [];
 
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      // Pour le diagnostic, on ne traite qu'une seule page
+      const maxPages = Math.min(pdf.numPages, 1);
+      DiagnosticService.log(`📄 Traitement de ${maxPages} page(s) pour le diagnostic`);
+
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
         try {
-          console.log(`📄 Rendu de la page ${pageNum}/${pdf.numPages}...`);
+          DiagnosticService.log(`📄 Rendu de la page ${pageNum}...`);
           const page = await pdf.getPage(pageNum);
           const viewport = page.getViewport({ scale: 1.5 });
           
@@ -63,7 +78,7 @@ export class PDFToImageService {
           };
 
           await page.render(renderContext).promise;
-          console.log(`✅ Page ${pageNum} rendue avec succès (${viewport.width}x${viewport.height})`);
+          DiagnosticService.log(`✅ Page ${pageNum} rendue avec succès (${viewport.width}x${viewport.height})`);
 
           pages.push({
             pageNumber: pageNum,
@@ -72,11 +87,10 @@ export class PDFToImageService {
             height: viewport.height
           });
           
-          // Nettoyer la page pour libérer la mémoire
           page.cleanup();
         } catch (pageError) {
-          console.error(`❌ Erreur lors du rendu de la page ${pageNum}:`, pageError);
-          // Continuer avec les autres pages même si une page échoue
+          DiagnosticService.log(`❌ Erreur lors du rendu de la page ${pageNum}:`, pageError);
+          throw pageError; // Pour le diagnostic, on propage l'erreur
         }
       }
 
@@ -84,10 +98,10 @@ export class PDFToImageService {
         throw new Error('Aucune page n\'a pu être convertie');
       }
 
-      console.log(`🎉 Conversion terminée avec succès: ${pages.length} pages converties`);
+      DiagnosticService.log(`🎉 Conversion terminée avec succès: ${pages.length} pages converties`);
       return pages;
     } catch (error) {
-      console.error('❌ Erreur lors de la conversion PDF vers images:', error);
+      DiagnosticService.log('❌ Erreur lors de la conversion PDF vers images:', error);
       throw new Error(`Impossible de convertir le PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   }

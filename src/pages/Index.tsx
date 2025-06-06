@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import PDFUploader from '@/components/PDFUploader';
 import AnalysisResults from '@/components/AnalysisResults';
 import PDFViewer from '@/components/PDFViewer';
+import DiagnosticPanel from '@/components/DiagnosticPanel';
 import { AnalysisResult } from '@/types/analysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -191,6 +192,9 @@ const Index = () => {
           )}
         </div>
       </div>
+      
+      {/* Panel de diagnostic */}
+      <DiagnosticPanel />
     </div>
   );
 };
