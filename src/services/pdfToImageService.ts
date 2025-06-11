@@ -7,14 +7,18 @@ if (typeof window !== 'undefined') {
   try {
     DiagnosticService.log('🔧 Configuration du worker PDF.js...');
     
-    // Approche 1: Essayer l'URL standard
-    const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).toString();
-    DiagnosticService.log('📍 Tentative URL worker:', workerUrl);
+    // Utiliser le worker depuis le dossier public
+    const workerUrl = '/pdf.worker.min.js';
+    DiagnosticService.log('📍 URL du worker local:', workerUrl);
     
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
     DiagnosticService.log('✅ Worker configuré avec succès');
   } catch (error) {
     DiagnosticService.log('❌ Erreur configuration worker:', error);
+    
+    // Fallback vers CDN
+    DiagnosticService.log('🔄 Fallback vers CDN...');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
   }
 }
 
@@ -36,14 +40,16 @@ export class PDFToImageService {
       // Test de la configuration du worker
       DiagnosticService.log('🔧 Worker source actuel:', pdfjsLib.GlobalWorkerOptions.workerSrc);
       
-      // Configuration de chargement avec diagnostic
+      // Configuration de chargement simplifiée
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         useWorkerFetch: false,
         isEvalSupported: false,
         useSystemFonts: true,
         disableAutoFetch: true,
-        disableStream: true
+        disableStream: true,
+        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/cmaps/',
+        cMapPacked: true
       });
       
       DiagnosticService.log('🚀 Tentative de chargement du document PDF...');
@@ -52,9 +58,9 @@ export class PDFToImageService {
       
       const pages: PDFPage[] = [];
 
-      // Pour le diagnostic, on ne traite qu'une seule page
-      const maxPages = Math.min(pdf.numPages, 1);
-      DiagnosticService.log(`📄 Traitement de ${maxPages} page(s) pour le diagnostic`);
+      // Pour le diagnostic, traiter toutes les pages (max 3 pour éviter la surcharge)
+      const maxPages = Math.min(pdf.numPages, 3);
+      DiagnosticService.log(`📄 Traitement de ${maxPages} page(s)`);
 
       for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
         try {
@@ -90,7 +96,7 @@ export class PDFToImageService {
           page.cleanup();
         } catch (pageError) {
           DiagnosticService.log(`❌ Erreur lors du rendu de la page ${pageNum}:`, pageError);
-          throw pageError; // Pour le diagnostic, on propage l'erreur
+          throw pageError;
         }
       }
 
