@@ -1,4 +1,3 @@
-
 export class DiagnosticService {
   static logs: string[] = [];
 
@@ -21,21 +20,7 @@ export class DiagnosticService {
     try {
       this.log('🔧 Test du worker PDF.js...');
       
-      // Test 1: Vérifier l'URL locale
-      const localWorkerUrl = '/pdf.worker.min.js';
-      this.log('📍 Test URL locale:', localWorkerUrl);
-      
-      try {
-        const localResponse = await fetch(localWorkerUrl);
-        if (localResponse.ok) {
-          this.log('✅ Worker local accessible');
-          return true;
-        }
-      } catch (error) {
-        this.log('❌ Worker local inaccessible:', error);
-      }
-      
-      // Test 2: Vérifier l'URL CDN de fallback
+      // Test direct du CDN (plus fiable)
       const cdnWorkerUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
       this.log('📍 Test URL CDN:', cdnWorkerUrl);
       

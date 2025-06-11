@@ -1,24 +1,19 @@
-
 import * as pdfjsLib from 'pdfjs-dist';
 import { DiagnosticService } from './diagnosticService';
 
-// Configuration du worker PDF.js avec diagnostic
+// Configuration du worker PDF.js avec diagnostic amélioré
 if (typeof window !== 'undefined') {
   try {
     DiagnosticService.log('🔧 Configuration du worker PDF.js...');
     
-    // Utiliser le worker depuis le dossier public
-    const workerUrl = '/pdf.worker.min.js';
-    DiagnosticService.log('📍 URL du worker local:', workerUrl);
+    // Utiliser directement le CDN pour éviter les problèmes de module
+    const workerUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+    DiagnosticService.log('📍 URL du worker CDN:', workerUrl);
     
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
     DiagnosticService.log('✅ Worker configuré avec succès');
   } catch (error) {
     DiagnosticService.log('❌ Erreur configuration worker:', error);
-    
-    // Fallback vers CDN
-    DiagnosticService.log('🔄 Fallback vers CDN...');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
   }
 }
 
@@ -40,16 +35,12 @@ export class PDFToImageService {
       // Test de la configuration du worker
       DiagnosticService.log('🔧 Worker source actuel:', pdfjsLib.GlobalWorkerOptions.workerSrc);
       
-      // Configuration de chargement simplifiée
+      // Configuration de chargement simplifiée sans options de worker problématiques
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
-        useWorkerFetch: false,
-        isEvalSupported: false,
-        useSystemFonts: true,
-        disableAutoFetch: true,
-        disableStream: true,
         cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/cmaps/',
-        cMapPacked: true
+        cMapPacked: true,
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/'
       });
       
       DiagnosticService.log('🚀 Tentative de chargement du document PDF...');

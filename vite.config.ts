@@ -21,25 +21,11 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['pdfjs-dist'],
-    exclude: ['pdfjs-dist/build/pdf.worker.min.js']
+    include: ['pdfjs-dist']
   },
+  // Configuration simplifiée pour éviter les conflits de worker
   worker: {
     format: 'es'
   },
-  assetsInclude: ['**/*.wasm'],
-  // Configuration pour servir les fichiers PDF.js depuis public
-  publicDir: 'public',
-  build: {
-    rollupOptions: {
-      output: {
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'pdf.worker.min.js') {
-            return 'pdf.worker.min.js';
-          }
-          return 'assets/[name]-[hash][extname]';
-        }
-      }
-    }
-  }
+  publicDir: 'public'
 }));
